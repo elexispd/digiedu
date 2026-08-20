@@ -1,0 +1,234 @@
+{
+  "info": {
+    "name": "Badges CRUD",
+    "description": "Postman collection for Badges feature.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Badges",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}badges",
+          "host": [
+            "{{base_url}}badges"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Badge",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "name",
+              "value": "Math Genius",
+              "type": "text"
+            },
+            {
+              "key": "type",
+              "value": "Rare",
+              "type": "text"
+            },
+            {
+              "key": "category",
+              "value": "ACADEMIC SERIES",
+              "type": "text"
+            },
+            {
+              "key": "description",
+              "value": "Awarded for exceptional performance in Mathematics competitions.",
+              "type": "text"
+            },
+            {
+              "key": "level",
+              "value": "1",
+              "type": "text"
+            },
+            {
+              "key": "logo",
+              "type": "file",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}badges",
+          "host": [
+            "{{base_url}}badges"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Show Badge",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}badges/1",
+          "host": [
+            "{{base_url}}badges"
+          ],
+          "path": [
+            "1"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Update Badge",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "_method",
+              "value": "PUT",
+              "type": "text",
+              "description": "Required by Laravel for PUT requests with file uploads (multipart/form-data)"
+            },
+            {
+              "key": "name",
+              "value": "Creative Soul",
+              "type": "text"
+            },
+            {
+              "key": "type",
+              "value": "Common",
+              "type": "text"
+            },
+            {
+              "key": "category",
+              "value": "FINE ARTS SERIES",
+              "type": "text"
+            },
+            {
+              "key": "description",
+              "value": "Created award-winning traditional crafts.",
+              "type": "text"
+            },
+            {
+              "key": "level",
+              "value": "2",
+              "type": "text"
+            },
+            {
+              "key": "logo",
+              "type": "file",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}badges/1",
+          "host": [
+            "{{base_url}}badges"
+          ],
+          "path": [
+            "1"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Delete Badge",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}badges/1",
+          "host": [
+            "{{base_url}}badges"
+          ],
+          "path": [
+            "1"
+          ]
+        }
+      }
+    }
+  ]
+}

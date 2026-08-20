@@ -1,0 +1,573 @@
+{
+	"info": {
+		"_postman_id": "a9a3b610-1e52-4a0d-9b59-1e3d3f9e9e2a",
+		"name": "DigiEdu Result System API",
+		"description": "Postman collection for DigiEdu results management and retrieval endpoints.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Result Configurations",
+			"item": [
+				{
+					"name": "Get Result Configurations",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/result-configurations?category=Junior Secondary",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"result-configurations"
+							],
+							"query": [
+								{
+									"key": "category",
+									"value": "Junior Secondary"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Save Result Configurations",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"class_category\": \"Junior Secondary\",\n    \"configurations\": [\n        {\n            \"assessment_type\": \"First CA\",\n            \"percentage\": 15,\n            \"is_exam\": false\n        },\n        {\n            \"assessment_type\": \"Second CA\",\n            \"percentage\": 15,\n            \"is_exam\": false\n        },\n        {\n            \"assessment_type\": \"Exam\",\n            \"percentage\": 70,\n            \"is_exam\": true\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/result-configurations/bulk",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"result-configurations",
+								"bulk"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Result Uploads",
+			"item": [
+				{
+					"name": "Download Excel Template",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/results/template?school_class_id={{school_class_id}}&class_arm_id={{class_arm_id}}&subject_id={{subject_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"results",
+								"template"
+							],
+							"query": [
+								{
+									"key": "school_class_id",
+									"value": "{{school_class_id}}"
+								},
+								{
+									"key": "class_arm_id",
+									"value": "{{class_arm_id}}"
+								},
+								{
+									"key": "subject_id",
+									"value": "{{subject_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Single Result",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"student_id\": \"{{student_id}}\",\n    \"school_class_id\": \"{{school_class_id}}\",\n    \"class_arm_id\": \"{{class_arm_id}}\",\n    \"subject_id\": \"{{subject_id}}\",\n    \"scores\": [\n        {\n            \"config_id\": \"{{config_id_ca1}}\",\n            \"score\": 14.5\n        },\n        {\n            \"config_id\": \"{{config_id_exam}}\",\n            \"score\": 59.0\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/results/single",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"results",
+								"single"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Bulk Manual",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"school_class_id\": \"{{school_class_id}}\",\n    \"class_arm_id\": \"{{class_arm_id}}\",\n    \"subject_id\": \"{{subject_id}}\",\n    \"configs\": [\n        \"{{config_id_ca1}}\",\n        \"{{config_id_exam}}\"\n    ],\n    \"students\": [\n        {\n            \"student_id\": \"{{student_id}}\",\n            \"scores\": [12.5, 60.0]\n        },\n        {\n            \"student_id\": \"{{another_student_id}}\",\n            \"scores\": [14.0, null]\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/results/bulk-manual",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"results",
+								"bulk-manual"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Import Excel File",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "school_class_id",
+									"value": "{{school_class_id}}",
+									"type": "text"
+								},
+								{
+									"key": "class_arm_id",
+									"value": "{{class_arm_id}}",
+									"type": "text"
+								},
+								{
+									"key": "subject_id",
+									"value": "{{subject_id}}",
+									"type": "text"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/results/import",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"results",
+								"import"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Result Computations & Retrievals",
+			"item": [
+				{
+					"name": "Compute School Rankings (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/results/compute",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"results",
+								"compute"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single Student Term Result",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/results/student/{{student_id}}?academic_session_id={{academic_session_id}}&term=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"results",
+								"student",
+								"{{student_id}}"
+							],
+							"query": [
+								{
+									"key": "academic_session_id",
+									"value": "{{academic_session_id}}"
+								},
+								{
+									"key": "term",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Class/Arm Results Overview",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/results/class/{{school_class_id}}/arm/{{class_arm_id}}?academic_session_id={{academic_session_id}}&term=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"results",
+								"class",
+								"{{school_class_id}}",
+								"arm",
+								"{{class_arm_id}}"
+							],
+							"query": [
+								{
+									"key": "academic_session_id",
+									"value": "{{academic_session_id}}"
+								},
+								{
+									"key": "term",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Class/Arm Mastersheet Grid",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/results/class/{{school_class_id}}/arm/{{class_arm_id}}/mastersheet?academic_session_id={{academic_session_id}}&term=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"results",
+								"class",
+								"{{school_class_id}}",
+								"arm",
+								"{{class_arm_id}}",
+								"mastersheet"
+							],
+							"query": [
+								{
+									"key": "academic_session_id",
+									"value": "{{academic_session_id}}"
+								},
+								{
+									"key": "term",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subject Scores for Class/Arm",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/results/class/{{school_class_id}}/arm/{{class_arm_id}}/subject/{{subject_id}}?academic_session_id={{academic_session_id}}&term=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"results",
+								"class",
+								"{{school_class_id}}",
+								"arm",
+								"{{class_arm_id}}",
+								"subject",
+								"{{subject_id}}"
+							],
+							"query": [
+								{
+									"key": "academic_session_id",
+									"value": "{{academic_session_id}}"
+								},
+								{
+									"key": "term",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://digiedu.test"
+		},
+		{
+			"key": "auth_token",
+			"value": "your_bearer_token_here"
+		},
+		{
+			"key": "school_class_id",
+			"value": "your_school_class_uuid"
+		},
+		{
+			"key": "class_arm_id",
+			"value": "your_class_arm_uuid"
+		},
+		{
+			"key": "subject_id",
+			"value": "your_subject_uuid"
+		},
+		{
+			"key": "student_id",
+			"value": "your_student_uuid"
+		},
+		{
+			"key": "another_student_id",
+			"value": "another_student_uuid"
+		},
+		{
+			"key": "config_id_ca1",
+			"value": "ca1_uuid"
+		},
+		{
+			"key": "config_id_exam",
+			"value": "exam_uuid"
+		},
+		{
+			"key": "academic_session_id",
+			"value": "your_academic_session_uuid"
+		}
+	]
+}

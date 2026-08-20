@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Http\Controllers\Api\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
+use App\Models\User;
+use Illuminate\Validation\Rules\Password;
+
+class ResetPasswordController extends Controller
+{
+    /**
+     * Reset the user's password using an OTP.
+     */
+    public function __invoke(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp' => 'required|string|size:6',
+            'password' => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
+        ]);
+
+        $cacheKey = 'password_reset_otp_' . $request->email;
+        $cachedOtp = Cache::get($cacheKey);
+
+        if (!$cachedOtp || $cachedOtp !== $request->otp) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid or expired OTP.'
+            ], 400);
+        }
+
+        // Reset password
+        $user = User::where('email', $request->email)->first();
+        $user->forceFill([
+            'password' => Hash::make($request->password)
+        ])->save();
+
+        // Clear OTP
+        Cache::forget($cacheKey);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Your password has been reset successfully.'
+        ]);
+    }
+}
