@@ -40,18 +40,35 @@ class AdministratorController extends Controller
                 'id' => (string) Str::uuid(),
                 'name' => $request->name,
                 'email' => $request->email,
-                'password' => Hash::make('password123')
+                'password' => Hash::make('password123'),
+                'status' => 'pending'
             ]);
 
             $role = Role::find($request->role_id);
             $user->assignRole($role);
+
+            // Generate 7-digit activation code
+            $code = str_pad(rand(0, 9999999), 7, '0', STR_PAD_LEFT);
+            $cacheKey = 'staff_activation_code_' . $user->id;
+            \Illuminate\Support\Facades\Cache::put($cacheKey, $code, now()->addMinutes(15));
+
+            if (!empty($request->email)) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($request->email)->send(new \App\Mail\ActivationOtpMail($code));
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Mail failed: ' . $e->getMessage());
+                }
+            }
 
             DB::commit();
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Administrator created successfully',
-                'data' => $user->load('roles')
+                'data' => [
+                    'user' => $user->load('roles'),
+                    'activation_code' => $code
+                ]
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();

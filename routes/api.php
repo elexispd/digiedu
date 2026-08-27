@@ -15,6 +15,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/login', LoginController::class)->name('api.auth.login');
         Route::post('/forgot-password', ForgotPasswordController::class)->name('api.password.email');
         Route::post('/reset-password', ResetPasswordController::class)->name('api.password.update');
+        Route::post('/staff/activation', [\App\Http\Controllers\Api\Auth\StaffActivationController::class, 'activate'])->name('api.auth.staff.activate');
+
         
         Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/profile', [ProfileController::class, 'show'])->name('api.profile.show');

@@ -16,7 +16,26 @@ class GuardianPortalController extends Controller
      */
     public function sendActivationCode(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $validated = $request->validate([
+            'email' => 'required_without:phone|email|nullable',
+            'phone' => 'required_without:email|string|nullable'
+        ]);
+
+        $user = \App\Models\User::where(function ($query) use ($validated) {
+            if (!empty($validated['email'])) {
+                $query->orWhere('email', $validated['email']);
+            }
+            if (!empty($validated['phone'])) {
+                $query->orWhere('phone', $validated['phone']);
+            }
+        })->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User not found.'
+            ], 404);
+        }
 
         if ($user->status !== 'pending') {
             return response()->json([
@@ -24,11 +43,6 @@ class GuardianPortalController extends Controller
                 'message' => 'Account is already activated.'
             ], 400);
         }
-
-        $validated = $request->validate([
-            'email' => 'required_without:phone|email|nullable',
-            'phone' => 'required_without:email|string|nullable'
-        ]);
 
         // Generate 7-digit code
         $code = str_pad(rand(0, 9999999), 7, '0', STR_PAD_LEFT);
@@ -38,8 +52,11 @@ class GuardianPortalController extends Controller
         \Illuminate\Support\Facades\Cache::put($cacheKey, $code, now()->addMinutes(15));
 
         if (!empty($validated['email'])) {
-            // Send Email to the provided email
-            \Illuminate\Support\Facades\Mail::to($validated['email'])->send(new \App\Mail\ActivationOtpMail($code));
+            try {
+                \Illuminate\Support\Facades\Mail::to($validated['email'])->send(new \App\Mail\ActivationOtpMail($code));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Mail failed: ' . $e->getMessage());
+            }
 
             return response()->json([
                 'status' => 'success',
@@ -48,7 +65,6 @@ class GuardianPortalController extends Controller
         }
 
         if (!empty($validated['phone'])) {
-            // For SMS, we return it in the response as requested
             return response()->json([
                 'status' => 'success',
                 'message' => 'Activation code generated for phone successfully.',
@@ -57,14 +73,36 @@ class GuardianPortalController extends Controller
                 ]
             ]);
         }
+        
+        return response()->json(['status' => 'error', 'message' => 'Invalid request'], 400);
     }
 
     /**
-     * Verify the activation code and set a new password.
+     * Verify the activation code.
      */
     public function verifyActivationCode(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $validated = $request->validate([
+            'email' => 'required_without:phone|email|nullable',
+            'phone' => 'required_without:email|string|nullable',
+            'code' => 'required|string|size:7'
+        ]);
+
+        $user = \App\Models\User::where(function ($query) use ($validated) {
+            if (!empty($validated['email'])) {
+                $query->orWhere('email', $validated['email']);
+            }
+            if (!empty($validated['phone'])) {
+                $query->orWhere('phone', $validated['phone']);
+            }
+        })->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User not found.'
+            ], 404);
+        }
 
         if ($user->status !== 'pending') {
             return response()->json([
@@ -72,10 +110,6 @@ class GuardianPortalController extends Controller
                 'message' => 'Account is already activated.'
             ], 400);
         }
-
-        $validated = $request->validate([
-            'code' => 'required|string|size:7'
-        ]);
 
         $cacheKey = 'guardian_activation_code_' . $user->id;
         $cachedCode = Cache::get($cacheKey);
@@ -87,9 +121,19 @@ class GuardianPortalController extends Controller
             ], 400);
         }
 
+        // Clear code from cache
+        Cache::forget($cacheKey);
+
+        // Create Sanctum Token
+        $token = $user->createToken('auth_token')->plainTextToken;
+
         return response()->json([
             'status' => 'success',
-            'message' => 'Activation code verified successfully.'
+            'message' => 'Activation code verified successfully.',
+            'data' => [
+                'token' => $token,
+                'user' => $user->load('roles')
+            ]
         ]);
     }
 
@@ -120,10 +164,6 @@ class GuardianPortalController extends Controller
         if ($user->guardian) {
             $user->guardian->forceFill(['status' => 'active'])->save();
         }
-
-        // Clear code from cache
-        $cacheKey = 'guardian_activation_code_' . $user->id;
-        Cache::forget($cacheKey);
 
         return response()->json([
             'status' => 'success',

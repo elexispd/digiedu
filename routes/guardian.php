@@ -3,10 +3,11 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\GuardianPortalController;
 
-// Guardian Portal Routes
+// Unauthenticated Activation Routes
+Route::post('/activation/send-code', [GuardianPortalController::class, 'sendActivationCode'])->name('api.guardian.activation.send');
+Route::post('/activation/verify', [GuardianPortalController::class, 'verifyActivationCode'])->name('api.guardian.activation.verify');
+
 Route::middleware(['auth:sanctum', 'role:parent'])->group(function () {
-    Route::post('/activation/send-code', [GuardianPortalController::class, 'sendActivationCode'])->name('api.guardian.activation.send');
-    Route::post('/activation/verify', [GuardianPortalController::class, 'verifyActivationCode'])->name('api.guardian.activation.verify');
     Route::post('/activation/reset-password', [GuardianPortalController::class, 'resetPassword'])->name('api.guardian.activation.reset-password');
     
     // The following routes could be grouped under a middleware that checks if they are activated, 

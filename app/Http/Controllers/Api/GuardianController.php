@@ -35,13 +35,63 @@ class GuardianController extends Controller
      */
     public function store(StoreGuardianRequest $request): JsonResponse
     {
-        $guardian = Guardian::create($request->validated());
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $data = $request->validated();
+            
+            // Create a User account for the guardian
+            $user = \App\Models\User::create([
+                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'name' => $data['first_name'] . ' ' . $data['last_name'],
+                'email' => $data['email'] ?? null,
+                'phone' => $data['phone_number'] ?? null,
+                'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+                'status' => 'pending'
+            ]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Guardian created successfully',
-            'data' => $guardian
-        ], 201);
+            // Assign the 'parent' role
+            $role = \App\Models\Role::where('name', 'parent')->first();
+            if ($role) {
+                $user->assignRole($role);
+            }
+
+            // Assign user_id to guardian data
+            $data['user_id'] = $user->id;
+            $data['status'] = 'pending';
+            
+            $guardian = Guardian::create($data);
+
+            // Generate 7-digit activation code
+            $code = str_pad(rand(0, 9999999), 7, '0', STR_PAD_LEFT);
+            $cacheKey = 'guardian_activation_code_' . $user->id;
+            \Illuminate\Support\Facades\Cache::put($cacheKey, $code, now()->addMinutes(15));
+
+            if (!empty($data['email'])) {
+                // Try sending Email, ignore if it fails
+                try {
+                    \Illuminate\Support\Facades\Mail::to($data['email'])->send(new \App\Mail\ActivationOtpMail($code));
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Mail failed: ' . $e->getMessage());
+                }
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Guardian created successfully',
+                'data' => [
+                    'guardian' => $guardian,
+                    'activation_code' => $code
+                ]
+            ], 201);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create guardian: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

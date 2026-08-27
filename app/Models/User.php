@@ -31,6 +31,12 @@ class User extends Authenticatable
     ];
 
     /**
+     * Set the guard name for Spatie Permission to always use 'web'
+     * because roles are seeded with 'web' guard but API uses 'sanctum'.
+     */
+    protected $guard_name = 'web';
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var list<string>
