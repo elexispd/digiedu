@@ -91,6 +91,18 @@ class Student extends Model
         return $this->belongsTo(ClassArm::class);
     }
 
+    public function termResults(): HasMany
+    {
+        return $this->hasMany(StudentTermResult::class, 'student_id')
+            ->orderBy('created_at', 'desc');
+    }
+
+    public function previousTermResult(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(StudentTermResult::class, 'student_id')
+            ->latestOfMany('created_at');
+    }
+
     /**
      * Get dummy attendance percentage (placeholder until feature is built).
      */

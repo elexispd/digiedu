@@ -303,16 +303,15 @@ class ResultController extends Controller
             return true;
         }
 
-        // For teachers, verify SubjectAssignment
+        // For teachers, verify SubjectAssignment (teachers are assigned to the class and subject)
         $assigned = SubjectAssignment::where('user_id', $user->id)
             ->where('subject_id', $request->subject_id)
             ->where('school_class_id', $request->school_class_id)
-            ->where('class_arm_id', $request->class_arm_id)
             ->exists();
 
         if (!$assigned) {
             throw ValidationException::withMessages([
-                'subject_id' => 'You are not assigned to this subject and class arm.'
+                'subject_id' => 'You are not assigned to this subject and class.'
             ]);
         }
     }

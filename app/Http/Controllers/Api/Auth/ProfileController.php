@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use App\Http\Resources\UserResource;
 
 class ProfileController extends Controller
 {
@@ -15,13 +16,10 @@ class ProfileController extends Controller
      */
     public function show(Request $request): JsonResponse
     {
-        $user = $request->user()->load('roles.permissions');
-
         return response()->json([
             'status' => 'success',
             'data' => [
-                'user' => $user,
-                'all_permissions' => $user->getAllPermissions()->pluck('name'),
+                'user' => new UserResource($request->user()),
             ]
         ]);
     }
@@ -37,6 +35,8 @@ class ProfileController extends Controller
             'name' => 'sometimes|string|max:255',
             'phone' => 'sometimes|string|max:20|unique:users,phone,' . $user->id,
             'biometric_enabled' => 'sometimes|boolean',
+            'push_notifications_enabled' => 'sometimes|boolean',
+            'email_notifications_enabled' => 'sometimes|boolean',
         ]);
 
         $user->update($validated);
@@ -44,7 +44,9 @@ class ProfileController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Profile updated successfully',
-            'data' => $user->fresh()
+            'data' => [
+                'user' => new UserResource($user->fresh()),
+            ]
         ]);
     }
 
@@ -67,6 +69,46 @@ class ProfileController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Password changed successfully',
+        ]);
+    }
+
+    /**
+     * Get the authenticated user's notification settings.
+     */
+    public function getNotificationSettings(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'push_notifications_enabled' => (bool) $user->push_notifications_enabled,
+                'email_notifications_enabled' => (bool) $user->email_notifications_enabled,
+            ]
+        ]);
+    }
+
+    /**
+     * Update the authenticated user's notification settings (toggle push and email notifications).
+     */
+    public function updateNotificationSettings(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'push_notifications_enabled' => 'sometimes|boolean',
+            'email_notifications_enabled' => 'sometimes|boolean',
+        ]);
+
+        $user->update($validated);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Notification settings updated successfully',
+            'data' => [
+                'push_notifications_enabled' => (bool) $user->push_notifications_enabled,
+                'email_notifications_enabled' => (bool) $user->email_notifications_enabled,
+            ]
         ]);
     }
 }

@@ -70,7 +70,64 @@ class StudentResource extends JsonResource
                     'name' => $this->classArm->name,
                 ];
             }),
+            'previous_classes' => $this->formatPreviousClasses(),
             'documents' => $this->whenLoaded('documents')
         ];
+    }
+
+    /**
+     * Format all of the student's previous classes, terms, and academic sessions.
+     */
+    protected function formatPreviousClasses(): array
+    {
+        $results = $this->relationLoaded('termResults')
+            ? $this->termResults
+            : $this->termResults()
+                ->with([
+                    'schoolClass:id,name',
+                    'academicSession:id,name',
+                    'classArm:id,name',
+                ])
+                ->get();
+
+        if ($results->isEmpty()) {
+            return [];
+        }
+
+        return $results->map(function ($prev) {
+            $termRaw = $prev->term;
+            $termName = match (strtolower((string) $termRaw)) {
+                '1', 'first', 'first term' => 'First Term',
+                '2', 'second', 'second term' => 'Second Term',
+                '3', 'third', 'third term' => 'Third Term',
+                default => (string) $termRaw,
+            };
+
+            $termId = match (strtolower((string) $termRaw)) {
+                '1', 'first', 'first term' => '1',
+                '2', 'second', 'second term' => '2',
+                '3', 'third', 'third term' => '3',
+                default => (string) $termRaw,
+            };
+
+            return [
+                'class' => $prev->schoolClass ? [
+                    'id' => $prev->schoolClass->id,
+                    'name' => $prev->schoolClass->name,
+                ] : null,
+                'class_arm' => $prev->classArm ? [
+                    'id' => $prev->classArm->id,
+                    'name' => $prev->classArm->name,
+                ] : null,
+                'term' => [
+                    'id' => $termId,
+                    'name' => $termName,
+                ],
+                'session' => $prev->academicSession ? [
+                    'id' => $prev->academicSession->id,
+                    'name' => $prev->academicSession->name,
+                ] : null,
+            ];
+        })->values()->all();
     }
 }

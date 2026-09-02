@@ -14,13 +14,25 @@ use Illuminate\Support\Facades\Gate;
 class ResultConfigurationController extends Controller
 {
     /**
-     * Get result configurations for a specific category.
+     * Get result configurations for a specific category or class.
      */
     public function index(Request $request): JsonResponse
     {
-        Gate::authorize('manage-results');
+        if (!Gate::allows('manage-results') && !Gate::allows('upload-results') && !Gate::allows('view-results')) {
+            abort(403, 'Unauthorized to view result configurations');
+        }
 
         $category = $request->query('category');
+
+        // If class_id is passed, resolve category from SchoolClass
+        if (!$category && $classId = $request->query('class_id')) {
+            $schoolClass = \App\Models\SchoolClass::find($classId);
+            if ($schoolClass) {
+                $category = $schoolClass->category instanceof \App\Enums\ClassCategoryEnum 
+                    ? $schoolClass->category->value 
+                    : $schoolClass->category;
+            }
+        }
         
         $configs = ResultConfiguration::when($category, function ($query, $category) {
             return $query->where('class_category', $category);

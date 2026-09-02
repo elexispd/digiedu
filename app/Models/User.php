@@ -28,6 +28,8 @@ class User extends Authenticatable
         'password',
         'status',
         'biometric_enabled',
+        'push_notifications_enabled',
+        'email_notifications_enabled',
     ];
 
     /**
@@ -57,6 +59,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'biometric_enabled' => 'boolean',
+            'push_notifications_enabled' => 'boolean',
+            'email_notifications_enabled' => 'boolean',
         ];
     }
 

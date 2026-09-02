@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use App\Models\Student;
 use App\Models\Guardian;
 use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 
 class DashboardController extends Controller
 {
@@ -115,6 +116,8 @@ class DashboardController extends Controller
      */
     public function teacherAnalytics(Request $request): JsonResponse
     {
+        Gate::authorize('view-classes');
+
         $user = $request->user();
 
         // 1. Total subjects assigned (from subject_assignments pivot)

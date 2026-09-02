@@ -12,7 +12,7 @@ use Spatie\Permission\PermissionRegistrar;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database.
+     * Run the database seeds.
      */
     public function run(): void
     {
@@ -53,15 +53,29 @@ class DatabaseSeeder extends Seeder
             'manage-activities',
             'view-announcements',
             'manage-announcements',
+            'view-timetable',
+            'manage-timetable',
         ];
 
         foreach ($permissions as $permissionName) {
             Permission::firstOrCreate(['name' => $permissionName, 'guard_name' => 'web']);
         }
 
-        // 3. Associate all permissions with the 'admin' role
+        // 3. Associate permissions with roles
         $adminRole = Role::where('name', 'admin')->first();
-        $adminRole->syncPermissions($permissions);
+        if ($adminRole) {
+            $adminRole->syncPermissions($permissions);
+        }
+
+        $teacherRole = Role::firstOrCreate(['name' => 'teacher', 'guard_name' => 'web']);
+        $teacherRole->syncPermissions([
+            'view-attendance',
+            'manage-attendance',
+            'view-conducts',
+            'manage-conducts',
+            'view-activities',
+            'view-timetable',
+        ]);
 
         // 4. Seed a bootstrap Admin User
         $adminUser = User::firstOrCreate([

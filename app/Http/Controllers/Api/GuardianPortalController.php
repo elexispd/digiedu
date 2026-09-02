@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\StudentResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
@@ -219,9 +220,21 @@ class GuardianPortalController extends Controller
             ], 404);
         }
 
+        $students = $guardian->students()
+            ->with([
+                'user:id,name,email,status',
+                'guardians:id,first_name,last_name,phone_number',
+                'schoolClass:id,name,category',
+                'classArm:id,name',
+                'termResults.schoolClass:id,name',
+                'termResults.academicSession:id,name',
+                'termResults.classArm:id,name',
+            ])
+            ->get();
+
         return response()->json([
             'status' => 'success',
-            'data' => $guardian->load('students')
+            'data' => StudentResource::collection($students)
         ]);
     }
 
@@ -265,6 +278,34 @@ class GuardianPortalController extends Controller
                 'average' => '85.5', // Dummy
                 'attendance_percentage' => $attendancePercentage,
             ]
+        ]);
+    }
+
+    /**
+     * Get badges assigned to a specific student.
+     */
+    public function studentBadges(Request $request, string $studentId): JsonResponse
+    {
+        $user = $request->user();
+        $guardian = $user->guardian;
+
+        if (!$guardian) {
+            return response()->json(['status' => 'error', 'message' => 'Guardian profile not found.'], 404);
+        }
+
+        // Verify the student belongs to this guardian
+        $student = $guardian->students()->where('students.id', $studentId)->first();
+
+        if (!$student) {
+            return response()->json(['status' => 'error', 'message' => 'Student not found or not linked to your account.'], 403);
+        }
+
+        // Load the student's badges with pivot data (awarded_by, awarded_at)
+        $badges = $student->badges()->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $badges
         ]);
     }
 
@@ -318,6 +359,38 @@ class GuardianPortalController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $behaviors
+        ]);
+    }
+
+    /**
+     * Get academic history (list of sessions, terms, and classes) where the student has results.
+     */
+    public function studentAcademicHistory(Request $request, string $studentId): JsonResponse
+    {
+        $user = $request->user();
+        $guardian = $user->guardian;
+
+        if (!$guardian) {
+            return response()->json(['status' => 'error', 'message' => 'Guardian profile not found.'], 404);
+        }
+
+        $student = $guardian->students()->where('students.id', $studentId)->first();
+
+        if (!$student) {
+            return response()->json(['status' => 'error', 'message' => 'Student not found or not linked to your account.'], 403);
+        }
+
+        // Fetch distinct history from term results
+        $history = \App\Models\StudentTermResult::with(['academicSession:id,name', 'schoolClass:id,name', 'classArm:id,name'])
+            ->where('student_id', $student->id)
+            ->where('status', 'published') // Only show terms where results are published
+            ->select('academic_session_id', 'term', 'school_class_id', 'class_arm_id')
+            ->distinct()
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $history
         ]);
     }
 
@@ -523,4 +596,136 @@ class GuardianPortalController extends Controller
             'message' => 'All announcements marked as read.'
         ]);
     }
+
+    /**
+     * Get announcement counts (unread and total) for the guardian.
+     */
+    public function announcementsCount(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $query = \App\Models\Announcement::where(function ($q) {
+            $q->whereJsonContains('audience_target', 'parent')
+              ->orWhereJsonContains('audience_target', 'guardian')
+              ->orWhereJsonContains('audience_target', 'all');
+        });
+
+        $totalCount = (clone $query)->count();
+
+        $unreadCount = (clone $query)->whereDoesntHave('viewers', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->count();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'unread_count' => $unreadCount,
+                'total_count' => $totalCount,
+            ]
+        ]);
+    }
+
+    /**
+     * Get weekly class timetable for a specific student linked to this guardian.
+     */
+    public function studentTimetable(Request $request, string $studentId): JsonResponse
+    {
+        $user = $request->user();
+        $guardian = $user->guardian;
+
+        if (!$guardian) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Guardian record not found.',
+            ], 404);
+        }
+
+        $student = $guardian->students()
+            ->where('students.id', $studentId)
+            ->with(['schoolClass:id,name,category', 'classArm:id,school_class_id,name'])
+            ->first();
+
+        if (!$student) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Student not found or not associated with this guardian.',
+            ], 404);
+        }
+
+        if (!$student->class_arm_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Student is not assigned to any class arm yet.',
+            ], 422);
+        }
+
+        $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        $periods = \App\Models\TimetablePeriod::orderBy('order', 'asc')->get();
+
+        $currentSession = \App\Models\AcademicSession::where('is_current', true)->first();
+        $sessionId = $request->query('academic_session_id') ?? $currentSession?->id;
+        $rawTerm = $request->query('term') ?? $currentSession?->current_term ?? 1;
+        $term = (int) ($rawTerm instanceof \App\Enums\TermEnum ? $rawTerm->value : $rawTerm);
+
+        $slots = \App\Models\TimetableSlot::where('class_arm_id', $student->class_arm_id)
+            ->where('academic_session_id', $sessionId)
+            ->where('term', $term)
+            ->with([
+                'teacher:id,name,email',
+                'subject:id,name,code',
+                'period:id,name,period_number,start_time,end_time,is_break,order',
+            ])
+            ->get();
+
+        $slotsGrouped = [];
+        foreach ($slots as $slot) {
+            $key = $slot->day_of_week . '_' . $slot->timetable_period_id;
+            $slotsGrouped[$key] = [
+                'id' => $slot->id,
+                'subject_id' => $slot->subject_id,
+                'subject_name' => $slot->subject?->name ?? '',
+                'teacher_id' => $slot->teacher_id,
+                'teacher_name' => $slot->teacher?->name ?? '',
+                'room' => $slot->room ?? 'Room 101',
+                'session_type' => strtoupper($slot->session_type ?? 'lecture'),
+            ];
+        }
+
+        $grid = [];
+        foreach ($periods as $period) {
+            $row = [
+                'period_id' => $period->id,
+                'period_name' => $period->name,
+                'period_number' => $period->period_number,
+                'time' => $period->start_time . ' - ' . $period->end_time,
+                'is_break' => $period->is_break,
+                'days' => [],
+            ];
+
+            foreach ($days as $day) {
+                $key = $day . '_' . $period->id;
+                $row['days'][$day] = $slotsGrouped[$key] ?? null;
+            }
+
+            $grid[] = $row;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'student' => [
+                    'id' => $student->id,
+                    'name' => trim("{$student->first_name} {$student->middle_name} {$student->last_name}"),
+                    'class_name' => ($student->schoolClass?->name ?? '') . ' ' . ($student->classArm?->name ?? ''),
+                ],
+                'session' => [
+                    'academic_session_id' => $sessionId,
+                    'term' => $term,
+                ],
+                'periods' => $periods,
+                'grid' => $grid,
+            ],
+        ]);
+    }
 }
+

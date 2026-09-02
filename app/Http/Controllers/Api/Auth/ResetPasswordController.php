@@ -19,17 +19,17 @@ class ResetPasswordController extends Controller
     {
         $request->validate([
             'email' => 'required|email|exists:users,email',
-            'otp' => 'required|string|size:6',
+            'token' => 'required|string',
             'password' => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
         ]);
 
-        $cacheKey = 'password_reset_otp_' . $request->email;
-        $cachedOtp = Cache::get($cacheKey);
+        $cacheKey = 'password_reset_token_' . $request->email;
+        $cachedToken = Cache::get($cacheKey);
 
-        if (!$cachedOtp || $cachedOtp !== $request->otp) {
+        if (!$cachedToken || $cachedToken !== $request->token) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Invalid or expired OTP.'
+                'message' => 'Invalid or expired token.'
             ], 400);
         }
 
@@ -39,7 +39,7 @@ class ResetPasswordController extends Controller
             'password' => Hash::make($request->password)
         ])->save();
 
-        // Clear OTP
+        // Clear token
         Cache::forget($cacheKey);
 
         return response()->json([

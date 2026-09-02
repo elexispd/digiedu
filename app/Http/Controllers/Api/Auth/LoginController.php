@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Http\Resources\UserResource;
 
 class LoginController extends Controller
 {
@@ -36,9 +37,8 @@ class LoginController extends Controller
             'status' => 'success',
             'message' => 'Logged in successfully',
             'data' => [
-                'user' => $user->load('roles.permissions'),
+                'user' => new UserResource($user),
                 'token' => $token,
-                'all_permissions' => $user->getAllPermissions()->pluck('name'),
             ]
         ]);
     }

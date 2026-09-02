@@ -19,7 +19,15 @@ class StudentController extends Controller
     {
         Gate::authorize('view-students');
         
-        $query = Student::with(['user', 'guardians', 'schoolClass', 'classArm']);
+        $query = Student::with([
+            'user:id,name,email,status',
+            'guardians:id,first_name,last_name,phone_number',
+            'schoolClass:id,name,category',
+            'classArm:id,name',
+            'termResults.schoolClass:id,name',
+            'termResults.academicSession:id,name',
+            'termResults.classArm:id,name',
+        ]);
         
         // Filter by search term (name or admission number)
         if ($search = $request->input('search')) {
@@ -60,7 +68,16 @@ class StudentController extends Controller
     {
         Gate::authorize('view-students');
         
-        $student = Student::with(['user', 'guardians', 'documents', 'schoolClass', 'classArm'])->findOrFail($id);
+        $student = Student::with([
+            'user:id,name,email,status',
+            'guardians:id,first_name,last_name,phone_number',
+            'documents:id,student_id,document_type,file_path,original_name',
+            'schoolClass:id,name,category',
+            'classArm:id,name',
+            'termResults.schoolClass:id,name',
+            'termResults.academicSession:id,name',
+            'termResults.classArm:id,name',
+        ])->findOrFail($id);
 
         return response()->json([
             'status' => 'success',
@@ -83,7 +100,15 @@ class StudentController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Student updated successfully',
-            'data' => new StudentResource($student->fresh(['user', 'guardians', 'schoolClass', 'classArm']))
+            'data' => new StudentResource($student->fresh([
+                'user:id,name,email,status',
+                'guardians:id,first_name,last_name,phone_number',
+                'schoolClass:id,name,category',
+                'classArm:id,name',
+                'termResults.schoolClass:id,name',
+                'termResults.academicSession:id,name',
+                'termResults.classArm:id,name',
+            ]))
         ]);
     }
 
@@ -109,6 +134,70 @@ class StudentController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Student and linked user account deleted successfully'
+        ]);
+    }
+
+    /**
+     * Display the badges awarded to a specified student.
+     */
+    public function badges(string $id): JsonResponse
+    {
+        Gate::authorize('view-students');
+        
+        $student = Student::findOrFail($id);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $student->badges()->get()
+        ]);
+    }
+
+    /**
+     * Assign a badge to a student.
+     */
+    public function assignBadge(Request $request, string $id): JsonResponse
+    {
+        Gate::authorize('update-students');
+
+        $request->validate([
+            'badge_id' => 'required|exists:badges,id'
+        ]);
+
+        $student = Student::findOrFail($id);
+        
+        // Prevent assigning the same badge multiple times
+        if ($student->badges()->where('badge_id', $request->badge_id)->exists()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Student already has this badge.'
+            ], 400);
+        }
+
+        $student->badges()->attach($request->badge_id, [
+            'awarded_by' => $request->user()->id, // Storing the admin's user ID
+            'awarded_at' => now(),
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Badge assigned to student successfully.'
+        ]);
+    }
+
+    /**
+     * Revoke a badge from a student.
+     */
+    public function revokeBadge(string $id, string $badgeId): JsonResponse
+    {
+        Gate::authorize('update-students');
+
+        $student = Student::findOrFail($id);
+
+        $student->badges()->detach($badgeId);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Badge revoked from student successfully.'
         ]);
     }
 }

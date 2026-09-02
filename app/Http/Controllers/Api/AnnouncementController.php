@@ -95,4 +95,26 @@ class AnnouncementController extends Controller
             'message' => 'Announcement deleted successfully'
         ]);
     }
+
+    /**
+     * Get announcement count (unread and total) for the authenticated user.
+     */
+    public function count(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $totalCount = Announcement::count();
+
+        $unreadCount = $user ? Announcement::whereDoesntHave('viewers', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->count() : 0;
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'unread_count' => $unreadCount,
+                'total_count' => $totalCount,
+            ]
+        ]);
+    }
 }

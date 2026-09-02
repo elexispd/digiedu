@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\MessageSent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SendMessageRequest;
 use App\Models\Conversation;
@@ -191,6 +192,8 @@ class MessageController extends Controller
 
             return ['conversation' => $conversation, 'message' => $message];
         });
+
+        broadcast(new MessageSent($conversation['message']));
 
         return response()->json([
             'status'  => 'success',

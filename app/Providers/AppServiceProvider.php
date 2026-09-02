@@ -21,7 +21,38 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
-            return $user->hasRole('admin') ? true : null;
+            if ($user->hasRole('admin')) {
+                return true;
+            }
+
+            // Automatic role-based access for teachers to core teacher abilities
+            if ($user->hasRole('teacher') && in_array($ability, [
+                'manage-attendance',
+                'view-attendance',
+                'view-classes',
+                'manage-classes',
+                'view-subjects',
+                'view-results',
+                'upload-results',
+                'view-conducts',
+                'manage-conducts',
+                'view-activities',
+                'view-timetable',
+            ])) {
+                return true;
+            }
+
+            // Automatic role-based access for parents to core parent abilities
+            if ($user->hasRole('parent') && in_array($ability, [
+                'view-timetable',
+                'view-results',
+                'view-attendance',
+                'view-announcements',
+            ])) {
+                return true;
+            }
+
+            return null; // Fallback to Spatie permission checks
         });
 
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
