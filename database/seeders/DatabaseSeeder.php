@@ -69,6 +69,7 @@ class DatabaseSeeder extends Seeder
 
         $teacherRole = Role::firstOrCreate(['name' => 'teacher', 'guard_name' => 'web']);
         $teacherRole->syncPermissions([
+            'view-students',
             'view-attendance',
             'manage-attendance',
             'view-conducts',

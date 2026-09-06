@@ -123,12 +123,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard/counts', [\App\Http\Controllers\Api\DashboardController::class, 'analyticCounts'])->name('api.dashboard.counts');
         Route::get('/dashboard/status-analytics', [\App\Http\Controllers\Api\DashboardController::class, 'userStatusAnalytics'])->name('api.dashboard.status-analytics');
 
-        // Standard Student RUD
-        Route::get('/students', [\App\Http\Controllers\Api\StudentController::class, 'index'])->name('api.students.index');
-        Route::get('/students/{id}/badges', [\App\Http\Controllers\Api\StudentController::class, 'badges'])->name('api.students.badges');
+        // Student Management & Mutating Operations (Admin Only)
         Route::post('/students/{id}/badges/assign', [\App\Http\Controllers\Api\StudentController::class, 'assignBadge'])->name('api.students.badges.assign');
         Route::delete('/students/{id}/badges/{badge_id}', [\App\Http\Controllers\Api\StudentController::class, 'revokeBadge'])->name('api.students.badges.revoke');
-        Route::get('/students/{id}', [\App\Http\Controllers\Api\StudentController::class, 'show'])->name('api.students.show');
         Route::put('/students/{id}', [\App\Http\Controllers\Api\StudentController::class, 'update'])->name('api.students.update');
         Route::delete('/students/{id}', [\App\Http\Controllers\Api\StudentController::class, 'destroy'])->name('api.students.destroy');
 
@@ -145,6 +142,13 @@ Route::prefix('v1')->group(function () {
         Route::put('/students/{id}/guardians', [\App\Http\Controllers\Api\StudentRegistrationController::class, 'updateGuardians'])->name('api.students.updateGuardians');
         Route::post('/students/{id}/documents', [\App\Http\Controllers\Api\StudentRegistrationController::class, 'storeDocument'])->name('api.students.storeDocument');
         Route::put('/students/{id}/account-setup', [\App\Http\Controllers\Api\StudentRegistrationController::class, 'updateAccountSetup'])->name('api.students.updateAccountSetup');
+    });
+
+    // Students Read Routes (Accessible to Admin & Teacher)
+    Route::middleware(['auth:sanctum', 'role:admin|teacher'])->group(function () {
+        Route::get('/students', [\App\Http\Controllers\Api\StudentController::class, 'index'])->name('api.students.index');
+        Route::get('/students/{id}', [\App\Http\Controllers\Api\StudentController::class, 'show'])->name('api.students.show');
+        Route::get('/students/{id}/badges', [\App\Http\Controllers\Api\StudentController::class, 'badges'])->name('api.students.badges');
     });
 
     // Student Attendance & Results (Authorized via Gate permissions)

@@ -40,15 +40,25 @@ class StudentController extends Controller
         }
         
         // Filter by class name (e.g., "jss 1")
-        if ($className = $request->input('class')) {
+        if ($className = $request->input('class') ?? $request->input('class_name')) {
             $query->whereHas('schoolClass', function ($q) use ($className) {
                 $q->where('name', 'like', "%{$className}%");
             });
         }
         
         // Filter by exact school_class_id if class_id is passed explicitly
-        if ($classId = $request->input('class_id')) {
+        if ($classId = $request->input('class_id') ?? $request->input('school_class_id')) {
             $query->where('school_class_id', $classId);
+        }
+
+        // Filter by class arm (optional)
+        if ($armParam = $request->input('class_arm_id') ?? $request->input('arm_id') ?? $request->input('class_arm') ?? $request->input('arm')) {
+            $query->where(function ($q) use ($armParam) {
+                $q->where('class_arm_id', $armParam)
+                  ->orWhereHas('classArm', function ($armQ) use ($armParam) {
+                      $armQ->where('name', $armParam);
+                  });
+            });
         }
 
         // Simple pagination

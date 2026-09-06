@@ -275,7 +275,7 @@ class TeacherPortalController extends Controller
 
     /**
      * Get list of students in an assigned class (with optional arm filtering and search).
-     * Returns: id, name, reg_number
+     * Returns: id, name, reg_number, class_arm_id, class_arm
      */
     public function classStudents(Request $request, string $id): JsonResponse
     {
@@ -307,8 +307,13 @@ class TeacherPortalController extends Controller
 
         $query = Student::where('school_class_id', $id);
 
-        if ($armId = $request->input('class_arm_id') ?? $request->input('arm_id')) {
-            $query->where('class_arm_id', $armId);
+        if ($armParam = $request->input('class_arm_id') ?? $request->input('arm_id') ?? $request->input('class_arm') ?? $request->input('arm')) {
+            $query->where(function ($q) use ($armParam) {
+                $q->where('class_arm_id', $armParam)
+                  ->orWhereHas('classArm', function ($armQ) use ($armParam) {
+                      $armQ->where('name', $armParam);
+                  });
+            });
         }
 
         if ($search = $request->input('search')) {
@@ -322,7 +327,8 @@ class TeacherPortalController extends Controller
 
         $students = $query->orderBy('first_name')
             ->orderBy('last_name')
-            ->get(['id', 'first_name', 'middle_name', 'last_name', 'admission_number'])
+            ->with('classArm:id,name')
+            ->get(['id', 'first_name', 'middle_name', 'last_name', 'admission_number', 'class_arm_id'])
             ->map(function ($student) {
                 $fullName = preg_replace('/\s+/', ' ', trim("{$student->first_name} {$student->middle_name} {$student->last_name}"));
 
@@ -330,6 +336,11 @@ class TeacherPortalController extends Controller
                     'id' => $student->id,
                     'name' => $fullName,
                     'reg_number' => $student->admission_number,
+                    'class_arm_id' => $student->class_arm_id,
+                    'class_arm' => $student->classArm ? [
+                        'id' => $student->classArm->id,
+                        'name' => $student->classArm->name,
+                    ] : null,
                 ];
             });
 

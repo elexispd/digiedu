@@ -27,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
 
             // Automatic role-based access for teachers to core teacher abilities
             if ($user->hasRole('teacher') && in_array($ability, [
+                'view-students',
                 'manage-attendance',
                 'view-attendance',
                 'view-classes',

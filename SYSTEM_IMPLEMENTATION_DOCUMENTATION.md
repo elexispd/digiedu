@@ -165,8 +165,8 @@ This document presents a comprehensive, complete, and un-truncated reference of 
 ### 🎓 Student Management & Multi-Step Registration (`/api/v1/students`)
 | Method | Endpoint | Auth / Middleware | Controller & Method | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/api/v1/students` | `auth:sanctum`, `role:admin` | [StudentController@index](file:///c:/laragon/www/digiedu/app/Http/Controllers/Api/StudentController.php) | Filterable student roster |
-| `GET` | `/api/v1/students/{id}` | `auth:sanctum`, `role:admin` | [StudentController@show](file:///c:/laragon/www/digiedu/app/Http/Controllers/Api/StudentController.php) | Full student profile details |
+| `GET` | `/api/v1/students` | `auth:sanctum`, `role:admin\|teacher` | [StudentController@index](file:///c:/laragon/www/digiedu/app/Http/Controllers/Api/StudentController.php) | Filterable student roster |
+| `GET` | `/api/v1/students/{id}` | `auth:sanctum`, `role:admin\|teacher` | [StudentController@show](file:///c:/laragon/www/digiedu/app/Http/Controllers/Api/StudentController.php) | Full student profile details |
 | `PUT` | `/api/v1/students/{id}` | `auth:sanctum`, `role:admin` | [StudentController@update](file:///c:/laragon/www/digiedu/app/Http/Controllers/Api/StudentController.php) | Update student record |
 | `DELETE` | `/api/v1/students/{id}` | `auth:sanctum`, `role:admin` | [StudentController@destroy](file:///c:/laragon/www/digiedu/app/Http/Controllers/Api/StudentController.php) | Delete student record |
 | `POST` | `/api/v1/students` | `auth:sanctum`, `role:admin` | [StudentRegistrationController@storeBasicInfo](file:///c:/laragon/www/digiedu/app/Http/Controllers/Api/StudentRegistrationController.php) | **Step 1**: Personal & Bio details |
@@ -230,6 +230,9 @@ This document presents a comprehensive, complete, and un-truncated reference of 
 | :--- | :--- | :--- | :--- | :--- |
 | `GET` | `/api/v1/teacher/dashboard` | `auth:sanctum`, `role:teacher` | [DashboardController@teacherAnalytics](file:///c:/laragon/www/digiedu/app/Http/Controllers/Api/DashboardController.php) | Teacher assigned class & student metrics |
 | `GET` | `/api/v1/teacher/classes` | `auth:sanctum`, `role:teacher` | [TeacherPortalController@myClasses](file:///c:/laragon/www/digiedu/app/Http/Controllers/Api/TeacherPortalController.php) | Allocated classes, subjects, and student counts |
+| `GET` | `/api/v1/teacher/classes/{id}` | `auth:sanctum` | [TeacherPortalController@showClass](file:///c:/laragon/www/digiedu/app/Http/Controllers/Api/TeacherPortalController.php) | Assigned class details, arms, attendance, top/needs attention students |
+| `GET` | `/api/v1/teacher/classes/{id}/students` | `auth:sanctum` | [TeacherPortalController@classStudents](file:///c:/laragon/www/digiedu/app/Http/Controllers/Api/TeacherPortalController.php) | Assigned class student list with optional arm filter/details |
+| `GET` | `/api/v1/teacher/timetable` | `auth:sanctum` | [TeacherPortalController@myTimetable](file:///c:/laragon/www/digiedu/app/Http/Controllers/Api/TeacherPortalController.php) | Teacher weekly timetable schedule grid |
 
 ---
 
