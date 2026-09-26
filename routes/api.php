@@ -114,10 +114,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/activities/{activity}/roster', [\App\Http\Controllers\Api\ExtracurricularActivityController::class, 'roster'])->name('api.activities.roster');
         Route::apiResource('activities', \App\Http\Controllers\Api\ExtracurricularActivityController::class);
 
-        // Announcements
-        Route::get('/announcements/count', [\App\Http\Controllers\Api\AnnouncementController::class, 'count'])->name('api.announcements.count');
-        Route::get('/announcements/unread-count', [\App\Http\Controllers\Api\AnnouncementController::class, 'count'])->name('api.announcements.unread-count');
-        Route::apiResource('announcements', \App\Http\Controllers\Api\AnnouncementController::class);
+        // Announcements Management (Admin Only)
+        Route::apiResource('announcements', \App\Http\Controllers\Api\AnnouncementController::class)->only(['store', 'update', 'destroy']);
 
         // Dashboard Analytics (Admin counts)
         Route::get('/dashboard/counts', [\App\Http\Controllers\Api\DashboardController::class, 'analyticCounts'])->name('api.dashboard.counts');
@@ -144,8 +142,15 @@ Route::prefix('v1')->group(function () {
         Route::put('/students/{id}/account-setup', [\App\Http\Controllers\Api\StudentRegistrationController::class, 'updateAccountSetup'])->name('api.students.updateAccountSetup');
     });
 
-    // Students Read Routes (Accessible to Admin & Teacher)
+    // Announcements & Students Read Routes (Accessible to Admin & Teacher)
     Route::middleware(['auth:sanctum', 'role:admin|teacher'])->group(function () {
+        // Announcements Read
+        Route::get('/announcements/count', [\App\Http\Controllers\Api\AnnouncementController::class, 'count'])->name('api.announcements.count');
+        Route::get('/announcements/unread-count', [\App\Http\Controllers\Api\AnnouncementController::class, 'count'])->name('api.announcements.unread-count');
+        Route::get('/announcements', [\App\Http\Controllers\Api\AnnouncementController::class, 'index'])->name('api.announcements.index');
+        Route::get('/announcements/{announcement}', [\App\Http\Controllers\Api\AnnouncementController::class, 'show'])->name('api.announcements.show');
+
+        // Students Read
         Route::get('/students', [\App\Http\Controllers\Api\StudentController::class, 'index'])->name('api.students.index');
         Route::get('/students/{id}', [\App\Http\Controllers\Api\StudentController::class, 'show'])->name('api.students.show');
         Route::get('/students/{id}/badges', [\App\Http\Controllers\Api\StudentController::class, 'badges'])->name('api.students.badges');

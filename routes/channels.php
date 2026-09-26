@@ -6,6 +6,10 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (string) $user->id === (string) $id;
 });
 
+Broadcast::channel('users.{id}', function ($user, $id) {
+    return (string) $user->id === (string) $id;
+});
+
 Broadcast::channel('conversation.{conversationId}', function ($user, $conversationId) {
     // Only allow if user is a participant of the conversation
     return \App\Models\Conversation::where('id', $conversationId)

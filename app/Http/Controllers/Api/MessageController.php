@@ -103,7 +103,7 @@ class MessageController extends Controller
         $other    = $conversation->otherParticipant($user->id);
         $messages = $conversation->messages()
             ->with('sender:id,name')
-            ->orderBy('created_at')
+            ->orderByDesc('created_at')
             ->paginate(50);
 
         $messages->getCollection()->transform(function (Message $msg) use ($user) {

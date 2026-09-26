@@ -39,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
                 'manage-conducts',
                 'view-activities',
                 'view-timetable',
+                'view-announcements',
             ])) {
                 return true;
             }

@@ -76,6 +76,7 @@ class DatabaseSeeder extends Seeder
             'manage-conducts',
             'view-activities',
             'view-timetable',
+            'view-announcements',
         ]);
 
         // 4. Seed a bootstrap Admin User

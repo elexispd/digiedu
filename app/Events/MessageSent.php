@@ -23,8 +23,8 @@ class MessageSent implements ShouldBroadcastNow
      */
     public function __construct(Message $message)
     {
-        // We load the sender relation so the payload has the sender's info
-        $this->message = $message->load('sender:id,name');
+        // We load the sender and conversation relations so the payload and recipient channel are populated
+        $this->message = $message->load(['sender:id,name', 'conversation']);
         $this->conversationId = $message->conversation_id;
     }
 
@@ -35,9 +35,22 @@ class MessageSent implements ShouldBroadcastNow
      */
     public function broadcastOn(): array
     {
-        return [
+        $channels = [
             new PrivateChannel('conversation.' . $this->conversationId),
         ];
+
+        if ($this->message->conversation) {
+            $conv = $this->message->conversation;
+            $recipientId = ($conv->participant_one_id === $this->message->sender_id)
+                ? $conv->participant_two_id
+                : $conv->participant_one_id;
+
+            if ($recipientId) {
+                $channels[] = new PrivateChannel('users.' . $recipientId);
+            }
+        }
+
+        return $channels;
     }
 
     /**
@@ -57,6 +70,7 @@ class MessageSent implements ShouldBroadcastNow
     {
         return [
             'id' => $this->message->id,
+            'conversation_id' => $this->conversationId,
             'body' => $this->message->body,
             'sender_id' => $this->message->sender_id,
             'sender_name' => $this->message->sender?->name,
