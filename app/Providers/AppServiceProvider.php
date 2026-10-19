@@ -40,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
                 'view-activities',
                 'view-timetable',
                 'view-announcements',
+                'assign-badges',
             ])) {
                 return true;
             }

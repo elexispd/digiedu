@@ -23,6 +23,8 @@ class UserResource extends JsonResource
             'biometric_enabled' => (bool) $this->biometric_enabled,
             'push_notifications_enabled' => (bool) $this->push_notifications_enabled,
             'email_notifications_enabled' => (bool) $this->email_notifications_enabled,
+            'two_factor_enabled' => (bool) $this->two_factor_enabled,
+            'two_factor_email' => $this->two_factor_email,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
             'roles' => $this->getRoleNames(),

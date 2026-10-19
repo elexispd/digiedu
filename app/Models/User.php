@@ -30,6 +30,9 @@ class User extends Authenticatable
         'biometric_enabled',
         'push_notifications_enabled',
         'email_notifications_enabled',
+        'two_factor_enabled',
+        'two_factor_email',
+        'two_factor_confirmed_at',
     ];
 
     /**
@@ -61,6 +64,8 @@ class User extends Authenticatable
             'biometric_enabled' => 'boolean',
             'push_notifications_enabled' => 'boolean',
             'email_notifications_enabled' => 'boolean',
+            'two_factor_enabled' => 'boolean',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 

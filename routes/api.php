@@ -9,12 +9,16 @@ use App\Http\Controllers\Api\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\Auth\VerifyOtpController;
 use App\Http\Controllers\Api\Auth\ProfileController;
 use App\Http\Controllers\Api\Auth\LoginController;
+use App\Http\Controllers\Api\Auth\TwoFactorController;
 
 Route::prefix('v1')->group(function () {
     
     // Auth Routes
     Route::prefix('auth')->group(function () {
         Route::post('/login', LoginController::class)->name('api.auth.login');
+        Route::post('/login/2fa', [TwoFactorController::class, 'verifyLogin'])->name('api.auth.login.2fa');
+        Route::post('/2fa/verify-login', [TwoFactorController::class, 'verifyLogin'])->name('api.auth.2fa.verify-login');
+        Route::post('/2fa/resend-login-otp', [TwoFactorController::class, 'resendLoginOtp'])->name('api.auth.2fa.resend-login-otp');
         Route::post('/forgot-password', ForgotPasswordController::class)->name('api.password.email');
         Route::post('/verify-otp', VerifyOtpController::class)->name('api.password.verify-otp');
         Route::post('/reset-password', ResetPasswordController::class)->name('api.password.update');
@@ -27,6 +31,12 @@ Route::prefix('v1')->group(function () {
             Route::put('/profile/password', [ProfileController::class, 'changePassword'])->name('api.profile.password.update');
             Route::get('/profile/notification-settings', [ProfileController::class, 'getNotificationSettings'])->name('api.profile.notification-settings.show');
             Route::put('/profile/notification-settings', [ProfileController::class, 'updateNotificationSettings'])->name('api.profile.notification-settings.update');
+
+            // Two-Factor Authentication Management
+            Route::get('/2fa/status', [TwoFactorController::class, 'status'])->name('api.auth.2fa.status');
+            Route::post('/2fa/send-otp', [TwoFactorController::class, 'sendEnableOtp'])->name('api.auth.2fa.send-otp');
+            Route::post('/2fa/verify-enable', [TwoFactorController::class, 'verifyEnable'])->name('api.auth.2fa.verify-enable');
+            Route::post('/2fa/disable', [TwoFactorController::class, 'disable'])->name('api.auth.2fa.disable');
         });
     });
 
@@ -122,8 +132,6 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard/status-analytics', [\App\Http\Controllers\Api\DashboardController::class, 'userStatusAnalytics'])->name('api.dashboard.status-analytics');
 
         // Student Management & Mutating Operations (Admin Only)
-        Route::post('/students/{id}/badges/assign', [\App\Http\Controllers\Api\StudentController::class, 'assignBadge'])->name('api.students.badges.assign');
-        Route::delete('/students/{id}/badges/{badge_id}', [\App\Http\Controllers\Api\StudentController::class, 'revokeBadge'])->name('api.students.badges.revoke');
         Route::put('/students/{id}', [\App\Http\Controllers\Api\StudentController::class, 'update'])->name('api.students.update');
         Route::delete('/students/{id}', [\App\Http\Controllers\Api\StudentController::class, 'destroy'])->name('api.students.destroy');
 
@@ -144,16 +152,30 @@ Route::prefix('v1')->group(function () {
 
     // Announcements & Students Read Routes (Accessible to Admin & Teacher)
     Route::middleware(['auth:sanctum', 'role:admin|teacher'])->group(function () {
-        // Announcements Read
+        // Announcements Read & Management
         Route::get('/announcements/count', [\App\Http\Controllers\Api\AnnouncementController::class, 'count'])->name('api.announcements.count');
         Route::get('/announcements/unread-count', [\App\Http\Controllers\Api\AnnouncementController::class, 'count'])->name('api.announcements.unread-count');
         Route::get('/announcements', [\App\Http\Controllers\Api\AnnouncementController::class, 'index'])->name('api.announcements.index');
+        Route::put('/announcements/read-all', [\App\Http\Controllers\Api\AnnouncementController::class, 'markAllRead'])->name('api.announcements.read-all');
+        Route::put('/announcements/{id}/read', [\App\Http\Controllers\Api\AnnouncementController::class, 'markRead'])->name('api.announcements.read');
         Route::get('/announcements/{announcement}', [\App\Http\Controllers\Api\AnnouncementController::class, 'show'])->name('api.announcements.show');
 
-        // Students Read
+        // Notifications (Aliases to Announcements/Notifications)
+        Route::get('/notifications/count', [\App\Http\Controllers\Api\AnnouncementController::class, 'count'])->name('api.notifications.count');
+        Route::get('/notifications/unread-count', [\App\Http\Controllers\Api\AnnouncementController::class, 'count'])->name('api.notifications.unread-count');
+        Route::get('/notifications', [\App\Http\Controllers\Api\AnnouncementController::class, 'index'])->name('api.notifications.index');
+        Route::put('/notifications/read-all', [\App\Http\Controllers\Api\AnnouncementController::class, 'markAllRead'])->name('api.notifications.read-all');
+        Route::put('/notifications/{id}/read', [\App\Http\Controllers\Api\AnnouncementController::class, 'markRead'])->name('api.notifications.read');
+        Route::get('/notifications/{announcement}', [\App\Http\Controllers\Api\AnnouncementController::class, 'show'])->name('api.notifications.show');
+
+        // Students Read & Badge Management
         Route::get('/students', [\App\Http\Controllers\Api\StudentController::class, 'index'])->name('api.students.index');
         Route::get('/students/{id}', [\App\Http\Controllers\Api\StudentController::class, 'show'])->name('api.students.show');
+        Route::get('/students/{id}/overview', [\App\Http\Controllers\Api\StudentController::class, 'overview'])->name('api.students.overview');
+        Route::get('/students/{id}/attendance', [\App\Http\Controllers\Api\StudentController::class, 'attendance'])->name('api.students.attendance');
         Route::get('/students/{id}/badges', [\App\Http\Controllers\Api\StudentController::class, 'badges'])->name('api.students.badges');
+        Route::post('/students/{id}/badges/assign', [\App\Http\Controllers\Api\StudentController::class, 'assignBadge'])->name('api.students.badges.assign');
+        Route::delete('/students/{id}/badges/{badge_id}', [\App\Http\Controllers\Api\StudentController::class, 'revokeBadge'])->name('api.students.badges.revoke');
     });
 
     // Student Attendance & Results (Authorized via Gate permissions)

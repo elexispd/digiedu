@@ -353,12 +353,22 @@ class GuardianPortalController extends Controller
             $query->whereBetween('date', [$request->start_date, $request->end_date]);
         }
 
-        $behaviors = $query->orderBy('date', 'desc')
-            ->paginate(15);
+        $all = (clone $query)->get();
+
+        $summary = [
+            'total'      => $all->count(),
+            'by_type'    => $all->groupBy('type')->map->count(),
+            'by_category'=> $all->groupBy('category')->map->count(),
+        ];
+
+        $behaviors = $query->orderBy('date', 'desc')->paginate(15);
 
         return response()->json([
             'status' => 'success',
-            'data' => $behaviors
+            'data' => [
+                'summary' => $summary,
+                'records' => $behaviors,
+            ]
         ]);
     }
 
@@ -532,10 +542,19 @@ class GuardianPortalController extends Controller
         ->orderBy('created_at', 'desc')
         ->paginate(15);
 
-        // Map is_read status
-        $announcements->getCollection()->transform(function ($announcement) use ($user) {
-            $isRead = $announcement->viewers()->where('user_id', $user->id)->exists();
+        $announcementIds = $announcements->pluck('id')->toArray();
+        $viewedIds = \Illuminate\Support\Facades\DB::table('announcement_user_views')
+            ->where('user_id', $user->id)
+            ->whereIn('announcement_id', $announcementIds)
+            ->pluck('announcement_id')
+            ->flip()
+            ->toArray();
+
+        // Map is_read & isRead status
+        $announcements->getCollection()->transform(function ($announcement) use ($viewedIds) {
+            $isRead = isset($viewedIds[$announcement->id]);
             $announcement->is_read = $isRead;
+            $announcement->isRead = $isRead;
             return $announcement;
         });
 

@@ -28,5 +28,17 @@ Route::middleware(['auth:sanctum', 'role:parent'])->group(function () {
         Route::get('/announcements/unread-count', [GuardianPortalController::class, 'announcementsCount'])->name('api.guardian.announcements.unread-count');
         Route::put('/announcements/read-all', [GuardianPortalController::class, 'markAllAnnouncementsRead'])->name('api.guardian.announcements.read-all');
         Route::put('/announcements/{id}/read', [GuardianPortalController::class, 'markAnnouncementRead'])->name('api.guardian.announcements.read');
+
+        Route::get('/notifications', [GuardianPortalController::class, 'announcements'])->name('api.guardian.notifications.index');
+        Route::get('/notifications/count', [GuardianPortalController::class, 'announcementsCount'])->name('api.guardian.notifications.count');
+        Route::get('/notifications/unread-count', [GuardianPortalController::class, 'announcementsCount'])->name('api.guardian.notifications.unread-count');
+        Route::put('/notifications/read-all', [GuardianPortalController::class, 'markAllAnnouncementsRead'])->name('api.guardian.notifications.read-all');
+        Route::put('/notifications/{id}/read', [GuardianPortalController::class, 'markAnnouncementRead'])->name('api.guardian.notifications.read');
+
+        // Two-Factor Authentication
+        Route::get('/2fa/status', [\App\Http\Controllers\Api\Auth\TwoFactorController::class, 'status'])->name('api.guardian.2fa.status');
+        Route::post('/2fa/send-otp', [\App\Http\Controllers\Api\Auth\TwoFactorController::class, 'sendEnableOtp'])->name('api.guardian.2fa.send-otp');
+        Route::post('/2fa/verify-enable', [\App\Http\Controllers\Api\Auth\TwoFactorController::class, 'verifyEnable'])->name('api.guardian.2fa.verify-enable');
+        Route::post('/2fa/disable', [\App\Http\Controllers\Api\Auth\TwoFactorController::class, 'disable'])->name('api.guardian.2fa.disable');
     });
 });

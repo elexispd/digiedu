@@ -114,6 +114,8 @@ class MessageController extends Controller
                 'sender_name'=> $msg->sender?->name,
                 'is_mine'    => $msg->sender_id === $user->id,
                 'read_at'    => $msg->read_at,
+                'is_read'    => $msg->read_at !== null,
+                'isRead'     => $msg->read_at !== null,
                 'created_at' => $msg->created_at,
             ];
         });
@@ -205,6 +207,8 @@ class MessageController extends Controller
                     'body'       => $conversation['message']->body,
                     'is_mine'    => true,
                     'read_at'    => null,
+                    'is_read'    => false,
+                    'isRead'     => false,
                     'created_at' => $conversation['message']->created_at,
                 ],
             ],

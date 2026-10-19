@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Student;
+use App\Models\AcademicSession;
+use App\Models\GradeRule;
 use App\Http\Requests\UpdateStudentRequest;
 use App\Http\Resources\StudentResource;
 
@@ -148,6 +150,125 @@ class StudentController extends Controller
     }
 
     /**
+     * Student overview: parent info, attendance summary, academic performance.
+     */
+    public function overview(Request $request, string $id): JsonResponse
+    {
+        Gate::authorize('view-students');
+
+        $student = Student::with([
+            'guardians:id,first_name,last_name,phone_number,email,occupation',
+            'schoolClass:id,name,category',
+        ])->findOrFail($id);
+
+        // Resolve session & term
+        $session = AcademicSession::where('is_current', true)->first();
+        $term = $request->input('term', $session?->current_term?->value ?? $session?->current_term);
+        $sessionId = $request->input('academic_session_id', $session?->id);
+
+        // --- Attendance overview ---
+        $attendances = $student->attendances()
+            ->where('academic_session_id', $sessionId)
+            ->where('term', $term)
+            ->selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $present  = (int) ($attendances['present']  ?? 0);
+        $absent   = (int) ($attendances['absent']   ?? 0);
+        $late     = (int) ($attendances['late']     ?? 0);
+        $total    = $present + $absent + $late;
+
+        // --- Academic performance ---
+        $termResult = $student->termResults()
+            ->where('academic_session_id', $sessionId)
+            ->where('term', $term)
+            ->first();
+
+        $averageScore = $termResult?->average_score;
+
+        // Count total students in same class arm for rank display
+        $classTotal = $termResult
+            ? \App\Models\StudentTermResult::where('academic_session_id', $sessionId)
+                ->where('term', $term)
+                ->where('class_arm_id', $termResult->class_arm_id)
+                ->count()
+            : null;
+
+        // Resolve grade from grade_rules based on student's class category
+        $grade = null;
+        if ($averageScore !== null && $student->schoolClass) {
+            $grade = GradeRule::where('class_category', $student->schoolClass->category)
+                ->where('min_score', '<=', $averageScore)
+                ->where('max_score', '>=', $averageScore)
+                ->first(['grade', 'remark']);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'admission_number' => $student->admission_number,
+                'parents' => $student->guardians->map(fn($g) => [
+                    'id'           => $g->id,
+                    'name'         => $g->first_name . ' ' . $g->last_name,
+                    'phone_number' => $g->phone_number,
+                    'email'        => $g->email,
+                    'occupation'   => $g->occupation,
+                    'relationship' => $g->pivot->relationship,
+                ]),
+                'attendance' => [
+                    'term'    => $term,
+                    'session' => $session?->name,
+                    'total'   => $total,
+                    'present' => $present,
+                    'absent'  => $absent,
+                    'late'    => $late,
+                ],
+                'academic_performance' => [
+                    'term'          => $term,
+                    'session'       => $session?->name,
+                    'average_score' => $averageScore !== null ? round($averageScore, 1) : null,
+                    'class_rank'    => $termResult?->class_arm_position,
+                    'class_total'   => $classTotal,
+                    'grade'         => $grade?->grade,
+                    'remark'        => $grade?->remark,
+                ],
+            ]
+        ]);
+    }
+
+    /**
+     * Get paginated attendance records for a single student.
+     */
+    public function attendance(Request $request, string $id): JsonResponse
+    {
+        Gate::authorize('view-students');
+
+        $student = Student::findOrFail($id);
+
+        $session = AcademicSession::where('is_current', true)->first();
+
+        $query = $student->attendances()
+            ->where('academic_session_id', $request->input('academic_session_id', $session?->id))
+            ->where('term', $request->input('term', $session?->current_term?->value ?? $session?->current_term));
+
+        if ($date = $request->input('date')) {
+            $query->whereDate('date', $date);
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        $records = $query->orderBy('date', 'desc')->paginate($request->input('per_page', 15));
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $records
+        ]);
+    }
+
+    /**
      * Display the badges awarded to a specified student.
      */
     public function badges(string $id): JsonResponse
@@ -167,7 +288,7 @@ class StudentController extends Controller
      */
     public function assignBadge(Request $request, string $id): JsonResponse
     {
-        Gate::authorize('update-students');
+        Gate::authorize('assign-badges');
 
         $request->validate([
             'badge_id' => 'required|exists:badges,id'
@@ -196,12 +317,23 @@ class StudentController extends Controller
 
     /**
      * Revoke a badge from a student.
+     * Admins can revoke any badge; teachers can only revoke badges they awarded.
      */
-    public function revokeBadge(string $id, string $badgeId): JsonResponse
+    public function revokeBadge(Request $request, string $id, string $badgeId): JsonResponse
     {
-        Gate::authorize('update-students');
+        Gate::authorize('assign-badges');
 
         $student = Student::findOrFail($id);
+
+        $pivot = $student->badges()->wherePivot('badge_id', $badgeId)->first();
+
+        if (!$pivot) {
+            return response()->json(['status' => 'error', 'message' => 'Badge not found on this student.'], 404);
+        }
+
+        if ($request->user()->hasRole('teacher') && $pivot->pivot->awarded_by !== $request->user()->id) {
+            return response()->json(['status' => 'error', 'message' => 'You can only revoke badges you awarded.'], 403);
+        }
 
         $student->badges()->detach($badgeId);
 
